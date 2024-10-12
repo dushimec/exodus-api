@@ -2,27 +2,40 @@ import Post from "../models/post.js";
 import { getDataUri } from "../utils/getDatauri.js";
 import cloudinary from "cloudinary";
 
+
+// Create Post
 const createPost = async (req, res) => {
   try {
     if (!req.user.isAdmin) {
       return res.status(403).json({ message: "Access denied. Admin privileges required" });
     }
 
-    const file = req.file;
-    if (!file) {
-      return res.status(400).json({ message: "Please upload a photo" });
+    const files = req.files; 
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: "Please upload at least one photo" });
     }
 
-    const fileUri = getDataUri(file);
-    const cloudinaryResult = await cloudinary.v2.uploader.upload(fileUri.content);
+    const { title, content, price, destination } = req.body; 
+    const { userId } = req.user;
 
-    const { title, content } = req.body;
-    const userId = req.user.userId;
+    const mainPhotoUri = getDataUri(files[0]);
+    const mainPhotoResult = await cloudinary.v2.uploader.upload(mainPhotoUri.content);
+
+    const galleryPhotos = await Promise.all(
+      files.slice(1).map(async (file) => {
+        const fileUri = getDataUri(file);
+        const result = await cloudinary.v2.uploader.upload(fileUri.content);
+        return result.secure_url;
+      })
+    );
 
     let post = new Post({
       title,
       content,
-      photo: cloudinaryResult.secure_url,
+      price, 
+      destination, 
+      photo: mainPhotoResult.secure_url,
+      galleryPhotos,
       author: userId,
       comments: [],
       likes: 0,
@@ -31,12 +44,13 @@ const createPost = async (req, res) => {
     post = await post.save();
     post = await post.populate("author", "name");
 
-    res.status(201).json({ message: "Post created successfully", post });
+    return res.status(201).json({ message: "Post created successfully", post });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
 
+// Get All Posts
 const getPosts = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -57,16 +71,35 @@ const getPosts = async (req, res) => {
       currentPage: page,
     };
 
-    res.json({ posts, pagination });
+    return res.json({ posts, pagination });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
 
+// Get Posts By Destination
+const getPostsByDestination = async (req, res) => {
+  try {
+    const { destination } = req.params;
+
+    const posts = await Post.find({ destination })
+      .sort({ createdAt: -1 })
+      .populate("author", "name");
+
+    if (posts.length === 0) {
+      return res.status(404).json({ message: "No posts found for this destination" });
+    }
+
+    return res.json(posts);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+// Edit Post
 const editPost = async (req, res) => {
   const id = req.params.id;
   try {
-
     if (!req.user.isAdmin) {
       return res.status(403).json({ message: "Access denied. Admin privileges required" });
     }
@@ -81,16 +114,16 @@ const editPost = async (req, res) => {
       return res.status(404).json({ message: "Post not found or unauthorized" });
     }
 
-    res.json({ updatedPost });
+    return res.json({ updatedPost });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
 
+// Delete Post
 const deletePost = async (req, res) => {
   const id = req.params.id;
   try {
-
     if (!req.user.isAdmin) {
       return res.status(403).json({ message: "Access denied. Admin privileges required" });
     }
@@ -103,12 +136,13 @@ const deletePost = async (req, res) => {
       return res.status(404).json({ message: "Post not found or unauthorized" });
     }
 
-    res.json({ message: "Post deleted successfully" });
+    return res.json({ message: "Post deleted successfully" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
 
+// Post Comment
 const postComment = async (req, res) => {
   try {
     const { postId } = req.params;
@@ -116,17 +150,18 @@ const postComment = async (req, res) => {
 
     const post = await Post.findById(postId);
     if (!post) {
-      return res.status(404).json({ error: "Post not" });
+      return res.status(404).json({ error: "Post not found" });
     }
 
     post.comments.push({ body, likes: 0 });
     await post.save();
-    res.json(post);
+    return res.json(post);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
 
+// Reply to Comment
 const replyToComment = async (req, res) => {
   try {
     const { postId, commentId } = req.params;
@@ -148,20 +183,17 @@ const replyToComment = async (req, res) => {
       comment.replies = [];
     }
 
-    const newReply = {
-      body,
-      likes: 0,
-    };
-
+    const newReply = { body, likes: 0 };
     comment.replies.push(newReply);
     await post.save();
 
-    res.status(201).json({ message: "Reply added successfully", post });
+    return res.status(201).json({ message: "Reply added successfully", post });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
 
+// Edit Comment
 const editComment = async (req, res) => {
   try {
     const { postId, commentId } = req.params;
@@ -181,12 +213,13 @@ const editComment = async (req, res) => {
 
     comment.body = body;
     await post.save();
-    res.json(post);
+    return res.json(post);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
 
+// Delete Comment
 const deleteComment = async (req, res) => {
   try {
     const { postId, commentId } = req.params;
@@ -205,38 +238,23 @@ const deleteComment = async (req, res) => {
 
     post.comments.splice(commentIndex, 1);
     await post.save();
-    res.json(post);
+    return res.json(post);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
 
+// Like/Unlike Post or Comment
 const likeThePost = async (req, res) => {
   try {
-    const { postId } = req.params;
-    const { type, commentId } = req.body;
-    const userId = req.user.userId;
+    const { postId, commentId } = req.params;
 
     const post = await Post.findById(postId);
     if (!post) {
       return res.status(404).json({ error: "Post not found" });
     }
 
-    // For post likes/unlikes
-    if (type === "post") {
-      const hasLiked = post.likedBy.includes(userId);
-
-      if (hasLiked) {
-        // Unlike the post
-        post.likes -= 1;
-        post.likedBy = post.likedBy.filter((user) => user.toString() !== userId);
-      } else {
-        // Like the post
-        post.likes += 1;
-        post.likedBy.push(userId);
-      }
-    } else if (type === "comment") {
-      // For comment likes/unlikes
+    if (commentId) {
       const comment = post.comments.find(
         (comment) => comment._id.toString() === commentId
       );
@@ -244,119 +262,74 @@ const likeThePost = async (req, res) => {
         return res.status(404).json({ error: "Comment not found" });
       }
 
-      const hasLikedComment = comment.likedBy.includes(userId);
-
-      if (hasLikedComment) {
-        // Unlike the comment
-        comment.likes -= 1;
-        comment.likedBy = comment.likedBy.filter((user) => user.toString() !== userId);
-      } else {
-        // Like the comment
-        comment.likes += 1;
-        comment.likedBy.push(userId);
-      }
+      comment.likes++;
+      await post.save();
+      return res.json(post);
     } else {
-      return res.status(400).json({ error: "Invalid like type" });
+      post.likes++;
+      await post.save();
+      return res.json(post);
     }
-
-    await post.save();
-    res.json(post);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
 
+// Get Most Visited Posts
+const getMostVisitedPosts = async (req, res) => {
+  try {
+    const posts = await Post.find()
+      .sort({ visits: -1 }) // Sort by visits in descending order
+      .populate("author", "name")
+      .limit(10); // Limit to top 10 most visited posts
 
+    return res.json(posts);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
 
+// Get Most Liked Posts
 const getMostLikedPosts = async (req, res) => {
   try {
     const posts = await Post.find()
-      .sort({ likes: -1 })
-      .limit(10)
-      .populate("author", "name");
+      .sort({ likes: -1 }) // Sort by likes in descending order
+      .populate("author", "name")
+      .limit(10); // Limit to top 10 most liked posts
 
-    res.json(posts);
+    return res.json(posts);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
 
+// Get Post By ID
 const getPostById = async (req, res) => {
-  const id = req.params.id;
+  const { id } = req.params;
+
   try {
-    const post = await Post.findById(id).populate("author", "name");
+    const post = await Post.findById(id)
+      .populate("author", "name");
 
     if (!post) {
       return res.status(404).json({ message: "Post not found" });
     }
 
-    const postWithUpdatedViews = { ...post._doc, views: post.views + 1 };
+    // Increment the visits count
+    post.visits++;
+    await post.save();
 
-    res.json({ post: postWithUpdatedViews });
+    return res.json(post);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
 
-const getMostVisitedPosts = async (req, res) => {
-  try {
-    const posts = await Post.find()
-      .sort({ views: -1 })
-      .limit(10)
-      .populate("author", "name");
-
-    res.json(posts);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-const deletePostById = async (req, res) => {
-  const id = req.params.id;
-  try {
-    const deletedPost = await Post.findOneAndDelete({ _id: id });
-
-    if (!deletedPost) {
-      return res.status(404).json({ message: "Post not found" });
-    }
-
-    res.json({ message: "Post deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-const updatePostById = async (req, res) => {
-  const id = req.params.id;
-  try {
-    const updatedPost = await Post.findByIdAndUpdate(
-      { _id: id },
-      { $set: req.body },
-      { new: true }
-    ).populate("author", "name");
-
-    if (!updatedPost) {
-      return res.status(404).json({ message: "Post not found" });
-    }
-
-    res.json({ updatedPost });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-const getAllPosts = async (req, res) => {
-  try {
-    const posts = await Post.find().populate("author", "name");
-    res.json(posts);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
 
 export {
   createPost,
   getPosts,
+  getPostsByDestination,
   editPost,
   deletePost,
   postComment,
@@ -364,10 +337,7 @@ export {
   editComment,
   deleteComment,
   likeThePost,
+  getMostVisitedPosts,
   getMostLikedPosts,
   getPostById,
-  getMostVisitedPosts,
-  deletePostById,
-  updatePostById,
-  getAllPosts,
 };

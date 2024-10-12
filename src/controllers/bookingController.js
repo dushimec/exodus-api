@@ -1,33 +1,35 @@
 import Booking from "../models/booking.js";
 
 const createBooking = async (req, res) => {
-    const { postId } = req.params; 
-    const { date, details } = req.body; 
+  console.log(req.user);
+  const { postId } = req.params;
+  const { date, details } = req.body;
+  const userId = req.user.userId;
 
-  
   if (!date || !details) {
     return res.status(400).json({ message: "All fields are required." });
   }
 
   const newBooking = new Booking({
     postId,
-    userId: req.user.id, 
+    userId: userId,
     date,
     details,
   });
 
   try {
-    const savedBooking = await newBooking.save();
-    res.status(201).json(savedBooking);
+    const savedBooking = await newBooking.save().populate("userId", "name");
+    res.status(201).json({ message: "Booking created successfully", savedBooking });
   } catch (error) {
     res.status(500).json({ error: error.message });
+    console.log(error);
   }
 };
 
 const getBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find().populate('postId userId'); 
-    res.json(bookings);
+    const bookings = await Booking.find().populate("userId", "name");
+    res.status(200).json({ message: "Bookings found successfully", bookings });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -37,7 +39,7 @@ const getBookingById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const booking = await Booking.findById(id).populate('postId userId');
+    const booking = await Booking.findById(id).populate("userId", "name");
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
@@ -53,11 +55,11 @@ const updateBooking = async (req, res) => {
   try {
     const updatedBooking = await Booking.findByIdAndUpdate(id, req.body, {
       new: true,
-    }).populate('postId userId'); 
+    }).populate("userId", "name");
     if (!updatedBooking) {
       return res.status(404).json({ message: "Booking not found" });
     }
-    res.json(updatedBooking);
+    res.status(200).json({ updatedBooking });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -98,9 +100,7 @@ const approveBooking = async (req, res) => {
 
   try {
     if (!req.user.isAdmin) {
-      return res
-        .status(403)
-        .json({ message: "Access denied. Admin privileges required" });
+      return res.status(403).json({ message: "Access denied. Admin privileges required" });
     }
 
     const booking = await Booking.findById(id);
