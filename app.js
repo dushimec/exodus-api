@@ -22,6 +22,10 @@ app.use(
   })
 );
 
+app.use("/", (req, res) => {
+  res.send("Welcome to Exodus API");
+});
+
 app.use(cors());
 app.use(passport.initialize());
 app.use(passport.session());
@@ -42,5 +46,5 @@ cloudinary.v2.config({
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port http://localhost:${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
