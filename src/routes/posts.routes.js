@@ -35,11 +35,7 @@ postRoutes.post(
   authenticateToken,
   replyToComment
 );
-postRoutes.put(
-  "/:postId/comments/:commentId",
-  authenticateToken,
-  editComment
-);
+postRoutes.put("/:postId/comments/:commentId", authenticateToken, editComment);
 postRoutes.delete(
   "/:postId/comments/:commentId",
   authenticateToken,

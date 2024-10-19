@@ -21,10 +21,10 @@ const PORT = Number(process.env.PORT) || 3000;
 // CORS Configuration
 app.use(
   cors({
-    origin: process.env.CLIENT_URL, 
-    credentials: true, 
+    origin: process.env.CLIENT_URL,
+    credentials: true,
     allowedHeaders: ["Authorization", "Content-Type"],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], 
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   })
 );
 
@@ -56,11 +56,12 @@ app.use(morgan("tiny"));
 // Connect to Database
 connectToDatabase();
 
+const api = process.env.API_URL;
 // API Routes
-app.use("/auth", authRoutes);
-app.use("/posts", postRoutes);
-app.use("/booking", bookingRoute);
-app.use("/products", productRouter);
+app.use(`${api}/auth`, authRoutes);
+app.use(`${api}/posts`, postRoutes);
+app.use(`${api}/booking`, bookingRoute);
+app.use(`${api}/products`, productRouter);
 
 // Cloudinary Configuration
 cloudinary.v2.config({
