@@ -210,10 +210,15 @@ const resetPassword = async (req, res) => {
   }
 };
 
-const logout = async (req, res) => {
-  req.logout();
-  res.status(200).json({ message: "Logged out successfully." });
+const logout = (req, res) => {
+  req.logOut((err) => {
+    if (err) {
+      return res.status(500).json({ message: "Logout failed." });
+    }
+    res.status(200).json({ message: "Logged out successfully." });
+  });
 };
+
 
 export {
   signup,
