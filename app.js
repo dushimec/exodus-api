@@ -1,7 +1,7 @@
-// server.js or app.js
+// app.js
 import express from "express";
 import bodyParser from "body-parser";
-import { connectToDatabase } from "./src/config/databaseConnection.js";
+
 import session from "express-session";
 import passport from "passport";
 import authRoutes from "./src/routes/auth.routes.js";
@@ -16,7 +16,6 @@ import dotenv from "dotenv";
 dotenv.config(); // Load environment variables
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
 
 // CORS Configuration
 app.use(
@@ -53,8 +52,7 @@ app.use(passport.session());
 app.use(bodyParser.json());
 app.use(morgan("tiny"));
 
-// Connect to Database
-connectToDatabase();
+
 
 const api = process.env.API_URL;
 // API Routes
@@ -75,7 +73,5 @@ app.get("/", (req, res) => {
   res.send("Welcome to Exodus API");
 });
 
-// Start Server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+// Export app
+export default app;
