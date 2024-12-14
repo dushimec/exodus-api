@@ -6,9 +6,6 @@ export const connectToDatabase = async () => {
 
   try {
     await mongoose.connect(DB, {
-      // Connection options
-      useNewUrlParser: true, // Use the new URL parser
-      useUnifiedTopology: true, // Use the new server discovery and monitoring engine
       connectTimeoutMS: 30000, // Set connection timeout to 30 seconds
       socketTimeoutMS: 60000, // Keep socket open for 60 seconds
       retryWrites: true, // Enable retryable writes

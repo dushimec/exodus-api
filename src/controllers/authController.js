@@ -46,6 +46,7 @@ const signup = async (req, res) => {
     res.status(201).json({ user: userWithoutPassword, message: "User created successfully." });
   } catch (error) {
     res.status(500).json({ error: error.message });
+    console.log({ error: error.message })
   }
 };
 
@@ -155,7 +156,7 @@ const getUserCount = async (req, res) => {
 
 const getProfileFromToken = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.userId;
     const user = await User.findById(userId).select("-password");
     if (!user) {
       return res.status(404).json({ message: "User not found" });

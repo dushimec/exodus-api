@@ -9,7 +9,7 @@ const bookingSchema = new mongoose.Schema(
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "User ",
       required: true,
     },
     name: {
@@ -33,10 +33,11 @@ const bookingSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    travelers: { type: Number, default: 1 },
+    tripSite: { type: String, required: true },
   },
   { timestamps: true }
 );
-
 const Booking = mongoose.model("Booking", bookingSchema);
 
 export default Booking;

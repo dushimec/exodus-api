@@ -1,10 +1,12 @@
 // index.js
 import app from "../app.js";
 import { connectToDatabase } from "../src/config/databaseConnection.js";
-import "dotenv/config";
+import "dotenv/config"
 
-// Connect to the database
 connectToDatabase();
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
 
-// Export the app for Vercel's serverless environment
-export default app;
+export default app

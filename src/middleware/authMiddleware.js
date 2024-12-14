@@ -11,18 +11,18 @@ const authenticateToken = async (req, res, next) => {
 
     const secret = process.env.JWT_SECRET;
     if (!secret) {
-      throw new Error("JWT secret is not defined."); // Handle case where secret is undefined
+      throw new Error("JWT secret is not defined.");
     }
 
     const decodedToken = jwt.verify(token.split(" ")[1], secret);
 
-    const foundUser = await User.findById(decodedToken.userId).select("isAdmin profile"); // Selecting necessary fields
+    // Look up the user and add both userId and isAdmin to req.user
+    const foundUser = await User.findById(decodedToken.userId).select("isAdmin _id"); // Select _id and isAdmin
     if (!foundUser) {
       throw new Error("User not found.");
     }
 
-    req.user = foundUser; // Directly assign the found user
-
+    req.user = { userId: foundUser._id, isAdmin: foundUser.isAdmin }; // Set userId and isAdmin
     next();
   } catch (error) {
     res.status(401).json({ message: "Invalid token." });
