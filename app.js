@@ -70,7 +70,7 @@ cloudinary.v2.config({
 
 // Default Route - Should be last
 app.get("/", (req, res) => {
-  res.send("Welcome to Exodus API");
+  res.send("Welcome to Oldfox API");
 });
 
 // Export app

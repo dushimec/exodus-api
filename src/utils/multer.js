@@ -4,6 +4,6 @@ import multer from 'multer';
 const storage = multer.memoryStorage();
 export const multipleUpload = multer({
   storage
-}).single("file");
+}).single("files");
 
-export const singleUpload = multer({ storage }).single("photo"); 
+export const singleUpload = multer({ storage }).single("file"); 
