@@ -2,9 +2,9 @@ import Booking from "../models/booking.js";
 
 const createBooking = async (req, res) => {
   const { postId } = req.params;
-  const { date, details, name, email, travelers, tripSite } = req.body; 
+  const { date, details, name, email, travelers,  } = req.body; 
 
-  if (!date || !details || !name || !email || !tripSite) {
+  if (!date || !details || !name || !email || !travelers) {
     return res.status(400).json({ message: "All fields are required." });
   }
 
@@ -16,12 +16,11 @@ const createBooking = async (req, res) => {
     date,
     details,
     travelers: travelers || 1,
-    tripSite, 
   });
 
   try {
     const savedBooking = await newBooking.save();
-    await savedBooking.populate("userId", "name").execPopulate();
+    await savedBooking.populate("userId", "name");
     res.status(201).json({ message: "Booking created successfully", savedBooking });
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -11,6 +11,7 @@ const createPost = async (req, res, next) => {
     }
 
     const file = req.file;
+    console.log("uploaded photo: ", file)
     if (!file) {
       throw new Error("Please upload a photo");
     }
