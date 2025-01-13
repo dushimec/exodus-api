@@ -3,7 +3,7 @@ import cloudinary from "cloudinary";
 export const cloudinaryUpload = async (filePath) => {
   try {
     const result = await cloudinary.v2.uploader.upload(filePath, {
-      folder: "products", 
+      folder: "Photos", 
     });
     return result;
   } catch (error) {

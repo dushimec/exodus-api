@@ -125,6 +125,37 @@ const approveBooking = async (req, res) => {
   }
 };
 
+const getPerformanceOverview = async (req, res) => {
+    try {
+        // Get total bookings count
+        const totalBookings = await Booking.countDocuments();
+        
+        // Get bookings grouped by status
+        const bookingsByStatus = await Booking.aggregate([
+            { $group: { _id: "$status", count: { $sum: 1 } } }
+        ]);
+        
+        // Get bookings trend by date
+        const bookingsByDate = await Booking.aggregate([
+            { 
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ]);
+
+        res.status(200).json({
+            totalBookings,
+            bookingsByStatus,
+            bookingsByDate
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 export {
   createBooking,
   getBookings,
@@ -133,4 +164,5 @@ export {
   deleteBooking,
   cancelBooking,
   approveBooking,
+  getPerformanceOverview,
 };

@@ -7,10 +7,14 @@ import {
   deleteBooking,
   cancelBooking,
   approveBooking,
+  getPerformanceOverview,
 } from "../controllers/bookingController.js";
 import { authenticateToken } from "../middleware/authMiddleware.js";
 
 const bookingRoute = express.Router();
+
+// Define /booking-performance-overview before parameterized routes
+bookingRoute.get("/booking-performance-overview", authenticateToken, getPerformanceOverview);
 
 bookingRoute.post("/:postId", authenticateToken, createBooking);
 bookingRoute.get("/", authenticateToken, getBookings);
@@ -21,7 +25,6 @@ bookingRoute.patch("/:id/cancel", authenticateToken, cancelBooking);
 bookingRoute.patch("/:id/approve", authenticateToken, approveBooking);
 
 export default bookingRoute;
-
 
 /**
  * @swagger

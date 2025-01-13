@@ -10,9 +10,11 @@ const createPost = async (req, res, next) => {
       throw new Error("Access denied. Admin privileges required");
     }
 
+    console.log("Request object: ", req);
     const file = req.file;
-    console.log("uploaded photo: ", file)
+    console.log("Uploaded photo: ", file);
     if (!file) {
+      console.error("No file uploaded. Please check the request.");
       throw new Error("Please upload a photo");
     }
 
@@ -171,24 +173,23 @@ const getMostLikedPosts = async (req, res) => {
   }
 };
 
+// Get Upcoming Posts
 const getUpcomingPosts = async (req, res) => {
   try {
-    const today = new Date();
+    const latestPosts = await Post.find()
+      .sort({ tripDate: -1 }) 
+      .limit(3); 
 
-    // Query to get the latest 3 posts
-    const lastThreePosts = await Post.find({ tripDate: { $gt: today } })
-      .sort({ tripDate: 1 }) // Sort by ascending tripDate to get the nearest upcoming posts
-      .limit(3); // Limit to 3 posts
-
-    if (!lastThreePosts.length) {
-      return res.status(404).json({ message: "No upcoming trips found" });
+    if (!latestPosts.length) {
+      return res.status(404).json({ message: "No upcomming posts found" });
     }
 
-    return res.json(lastThreePosts);
+    return res.json(latestPosts);
   } catch (error) {
     return res.status(500).json({ error: "Internal server error: " + error.message });
   }
 };
+
 
 // Post Comment
 const postComment = async (req, res) => {
@@ -274,14 +275,12 @@ const likeThePost = async (req, res) => {
 
     if (!post) throw new Error("Post not found");
 
-    // Check if the user has already liked the post
     if (post.likes.includes(req.user.userId)) {
       return res.status(400).json({ message: "You have already liked this post" });
     }
 
-    // Add user ID to likes and increment like count
     post.likes.push(req.user.userId);
-    post.likeCount = (post.likeCount || 0) + 1; // Increment like count
+    post.likeCount = (post.likeCount || 0) + 1;
 
     await post.save();
 
@@ -289,7 +288,28 @@ const likeThePost = async (req, res) => {
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
-}
+};
+
+
+
+// Get Post Performance Overview
+const getPostPerformanceOverview = async (req, res) => {
+    try {
+        const totalPosts = await Post.countDocuments();
+        const mostVisitedPosts = await Post.find().sort({ views: -1 }).limit(5).populate("author", "name");
+        const mostLikedPosts = await Post.find().sort({ likes: -1 }).limit(5).populate("author", "name");
+        const upcomingPosts = await Post.find({ tripDate: { $gt: new Date() } }).sort({ tripDate: -1 }).limit(3).populate("author", "name");
+
+        res.status(200).json({
+            totalPosts,
+            mostVisitedPosts,
+            mostLikedPosts,
+            upcomingPosts
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
 
 // Export all handlers
 export {
@@ -307,4 +327,5 @@ export {
   getMostLikedPosts,
   getPostById,
   getUpcomingPosts,
+  getPostPerformanceOverview,
 };
