@@ -50,7 +50,7 @@ const PostSchema = new Schema(
         url: { type: String, required: false },
       },
     ], // Photos related to the post
-
+ 
     destination: {
       type: String,
       enum: ["Israel", "Egypt", "Turkey", "Rwanda"], // Allowed destination options
@@ -64,7 +64,9 @@ const PostSchema = new Schema(
         tripDate: { type: Date, required: true }, // Date for the visit to this site
       },
     ],
-
+    currency:{
+      type: String,
+    },
     // **Embedded Comments** (Can be added later)
     comments: [CommentSchema], // Array of comments for the post
 

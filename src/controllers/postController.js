@@ -2,6 +2,7 @@ import Post from "../models/post.js";
 import { getDataUri } from "../utils/getDatauri.js";
 import cloudinary from "cloudinary";
 import { errorHandler } from "../utils/errorHandler.js";
+import { cloudinaryUploadFromBuffer } from "../utils/cloudinary.js";
 
 // Create Post
 const createPost = async (req, res, next) => {
@@ -10,53 +11,45 @@ const createPost = async (req, res, next) => {
       throw new Error("Access denied. Admin privileges required");
     }
 
-    console.log("Request object: ", req);
+    const { title, destination, price, currency, tripDate, content, sites, trips } = req.body;
     const file = req.file;
-    console.log("Uploaded photo: ", file);
-    if (!file) {
-      console.error("No file uploaded. Please check the request.");
-      throw new Error("Please upload a photo");
+
+    // Basic validation
+    if (!title || !destination || !price || !tripDate || !content) {
+      return res.status(400).json({ message: "Please fill out all required fields." });
     }
 
-    const fileUri = getDataUri(file);
-    const uploadResult = await cloudinary.v2.uploader.upload(fileUri.content);
+    let imageUrl = '';
+    let imagePublicId = '';
+    if (file) {
+      const fileUri = getDataUri(file);
+      const cloudinaryResponse = await cloudinary.v2.uploader.upload(fileUri.content);
+      imageUrl = cloudinaryResponse.secure_url;
+      imagePublicId = cloudinaryResponse.public_id;
+    }
 
-    const { title, content, price, destination, tripDate, sites = '[]', trips = '[]' } = req.body;
-
-    const parsedSites = JSON.parse(sites);
-    const parsedTrips = JSON.parse(trips);
-
-    const tripsData = await Promise.all(parsedTrips.map((trip) => {
-      if (!trip.title || !trip.content || !trip.price || !trip.tripDate) {
-        throw new Error("All fields (title, content, price, tripDate) are required for each trip.");
-      }
-      return {
-        title: trip.title,
-        content: trip.content,
-        price: trip.price,
-        tripDate: trip.tripDate,
-        postImage: { public_id: uploadResult.public_id, url: uploadResult.secure_url },
-      };
-    }));
-
-    let post = new Post({
+    // Create new post object
+    const newPost = {
       title,
-      content,
-      price,
       destination,
-      postImage: { public_id: uploadResult.public_id, url: uploadResult.secure_url },
-      author: req.user.userId,
+      price,
+      currency,
       tripDate,
-      sites: parsedSites,
-      trips: tripsData,
-    });
+      content,
+      author: req.user.userId,
+      sites: JSON.parse(sites),
+      trips: JSON.parse(trips).map(trip => ({
+        ...trip,
+        postImage: imageUrl ? [{ public_id: imagePublicId, url: imageUrl }] : []
+      })), // Assign the image to each trip
+      postImage: imageUrl ? [{ public_id: imagePublicId, url: imageUrl }] : []
+    };
 
-    post = await post.save();
-    post = await post.populate("author", "name");
-
-    return res.status(201).json({ message: "Post created successfully", post });
+    // Save post to database
+    const post = await Post.create(newPost);
+    res.status(201).json(post);
   } catch (error) {
-    return next(error);
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -103,12 +96,13 @@ const editPost = async (req, res) => {
     const { sites = '[]', trips = '[]' } = req.body;
     const parsedSites = JSON.parse(sites);
     const parsedTrips = JSON.parse(trips);
+    const file = req.file;
 
     const updatedTrips = parsedTrips.map((trip) => {
       if (!trip.title || !trip.content || !trip.price || !trip.tripDate) {
         throw new Error("All fields (title, content, price, tripDate) are required for each trip.");
       }
-      return trip;
+      return { ...trip, image: file?.path || '' }; // Assign the image to each trip
     });
 
     const updatedPost = await Post.findByIdAndUpdate(
@@ -289,8 +283,6 @@ const likeThePost = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
-
-
 
 // Get Post Performance Overview
 const getPostPerformanceOverview = async (req, res) => {

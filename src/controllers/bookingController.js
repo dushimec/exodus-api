@@ -2,7 +2,7 @@ import Booking from "../models/booking.js";
 
 const createBooking = async (req, res) => {
   const { postId } = req.params;
-  const { date, details, name, email, travelers,  } = req.body; 
+  const { date, details, name, email, travelers } = req.body;
 
   if (!date || !details || !name || !email || !travelers) {
     return res.status(400).json({ message: "All fields are required." });
@@ -64,9 +64,7 @@ const updateBooking = async (req, res) => {
     if (!updatedBooking) {
       return res.status(404).json({ message: "Booking not found" });
     }
-    res
-      .status(200)
-      .json({ message: "Booking updated successfully", updatedBooking });
+    res.status(200).json({ message: "Booking updated successfully", updatedBooking });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -106,11 +104,8 @@ const approveBooking = async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Ensure only admins can approve
     if (!req.user.isAdmin) {
-      return res
-        .status(403)
-        .json({ message: "Access denied. Admin privileges required" });
+      return res.status(403).json({ message: "Access denied. Admin privileges required" });
     }
 
     const booking = await Booking.findById(id);
@@ -126,34 +121,44 @@ const approveBooking = async (req, res) => {
 };
 
 const getPerformanceOverview = async (req, res) => {
-    try {
-        // Get total bookings count
-        const totalBookings = await Booking.countDocuments();
-        
-        // Get bookings grouped by status
-        const bookingsByStatus = await Booking.aggregate([
-            { $group: { _id: "$status", count: { $sum: 1 } } }
-        ]);
-        
-        // Get bookings trend by date
-        const bookingsByDate = await Booking.aggregate([
-            { 
-                $group: {
-                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-                    count: { $sum: 1 }
-                }
-            },
-            { $sort: { _id: 1 } }
-        ]);
+  try {
+    const totalBookings = await Booking.countDocuments();
+    const bookingsByStatus = await Booking.aggregate([
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+    ]);
+    const bookingsByDate = await Booking.aggregate([
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
 
-        res.status(200).json({
-            totalBookings,
-            bookingsByStatus,
-            bookingsByDate
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    res.status(200).json({
+      totalBookings,
+      bookingsByStatus,
+      bookingsByDate,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const getRecentBookings = async (req, res) => {
+  const { limit = 10 } = req.query;
+
+  try {
+    const recentBookings = await Booking.find()
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit, 10))
+      .populate("userId", "name");
+
+    res.status(200).json({ message: "Recent bookings fetched successfully", recentBookings });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 export {
@@ -165,4 +170,5 @@ export {
   cancelBooking,
   approveBooking,
   getPerformanceOverview,
+  getRecentBookings,
 };
