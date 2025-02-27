@@ -1,11 +1,18 @@
 import Booking from "../models/booking.js";
+import sendEmail from "../utils/emailService.js";
+import Post from "../models/post.js";
 
 const createBooking = async (req, res) => {
   const { postId } = req.params;
-  const { date, details, name, email, travelers } = req.body;
+  const { date, name, email, travelers, phone } = req.body;
 
-  if (!date || !details || !name || !email || !travelers) {
+  if (!date || !name || !email || !travelers || !phone) {
     return res.status(400).json({ message: "All fields are required." });
+  }
+
+  const post = await Post.findById(postId);
+  if (!post) {
+    return res.status(404).json({ message: "Post not found" });
   }
 
   const newBooking = new Booking({
@@ -14,13 +21,25 @@ const createBooking = async (req, res) => {
     name,
     email,
     date,
-    details,
     travelers: travelers || 1,
+    phone,
   });
 
   try {
     const savedBooking = await newBooking.save();
     await savedBooking.populate("userId", "name");
+    await savedBooking.populate("postId");
+
+    // Send booking information to EMAIL_USER
+    const adminSubject = "New Booking Created";
+    const adminText = `Booking Details:\n\nName: ${name}\nEmail: ${email}\nDate: ${date}\nTravelers: ${travelers}\nPhone: ${phone}\nPost Destination: ${post.destination}\nStatus: ${savedBooking.status}`;
+    await sendEmail(process.env.EMAIL_USER, process.env.EMAIL_USER, adminSubject, adminText);
+
+    // Send confirmation email to user
+    const userSubject = "Booking Confirmation";
+    const userText = `Dear ${name},\n\nYour booking has been confirmed for Destination of ${post.destination}\nStatus: ${savedBooking.status} on ${date}.\n\nThank you for booking with us.`;
+    await sendEmail(process.env.EMAIL_USER, email, userSubject, userText);
+
     res.status(201).json({ message: "Booking created successfully", savedBooking });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -52,12 +71,12 @@ const getBookingById = async (req, res) => {
 
 const updateBooking = async (req, res) => {
   const { id } = req.params;
-  const { date, details, name, email, travelers, status } = req.body;
+  const { date, name, email, travelers, status } = req.body;
 
   try {
     const updatedBooking = await Booking.findByIdAndUpdate(
       id,
-      { date, details, name, email, travelers, status },
+      { date, name, email, travelers, status },
       { new: true }
     ).populate("userId", "name");
 

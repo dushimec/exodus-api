@@ -50,7 +50,7 @@ const PostSchema = new Schema(
         url: { type: String, required: false },
       },
     ], // Photos related to the post
- 
+
     destination: {
       type: String,
       enum: ["Israel", "Egypt", "Turkey", "Rwanda"], // Allowed destination options

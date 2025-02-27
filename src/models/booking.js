@@ -27,11 +27,11 @@ const bookingSchema = new mongoose.Schema(
     },
     date: {
       type: Date,
-      required: true,
+      
     },
-    details: {
+    phone: {
       type: String,
-      required: true,
+      
     },
     travelers: { type: Number, default: 1 },
   },
