@@ -32,12 +32,12 @@ const createBooking = async (req, res) => {
 
     // Send booking information to EMAIL_USER
     const adminSubject = "New Booking Created";
-    const adminText = `Booking Details:\n\nName: ${name}\nEmail: ${email}\nDate: ${date}\nTravelers: ${travelers}\nPhone: ${phone}\nPost Destination: ${post.destination}\nStatus: ${savedBooking.status}`;
+    const adminText = `Booking Details:\n\nName: ${name}\nEmail: ${email}\nDate: ${date}\nTravelers: ${travelers}\nPhone: ${phone}\nDestination: ${post.destination}\nStatus: ${savedBooking.status}\n\nBooking ID: ${savedBooking._id}\nUser ID: ${savedBooking.userId._id}\nPost ID: ${savedBooking.postId._id}\n\nPlease review the booking details and take necessary actions.`;
     await sendEmail(process.env.EMAIL_USER, process.env.EMAIL_USER, adminSubject, adminText);
 
     // Send confirmation email to user
     const userSubject = "Booking Confirmation";
-    const userText = `Dear ${name},\n\nYour booking has been confirmed for Destination of ${post.destination}\nStatus: ${savedBooking.status} on ${date}.\n\nThank you for booking with us.`;
+    const userText = `Dear ${name},\n\nYour booking has been confirmed for Destination of ${post.destination}\nStatus: ${savedBooking.status} on ${date}.\n\nBooking ID: ${savedBooking._id}\nUser ID: ${savedBooking.userId._id}\nPost ID: ${savedBooking.postId._id}\n\nThank you for booking with us.`;
     await sendEmail(process.env.EMAIL_USER, email, userSubject, userText);
 
     res.status(201).json({ message: "Booking created successfully", savedBooking });
