@@ -61,7 +61,7 @@ const PostSchema = new Schema(
     sites: [
       {
         name: { type: String, required: true }, // Name of the site
-        tripDate: { type: Date, required: true }, // Date for the visit to this site
+        siteDate: { type: Date, required: true }, // Date for the visit to this site
       },
     ],
     currency:{
@@ -76,7 +76,7 @@ const PostSchema = new Schema(
 
     price: { type: Number, required: true }, // Price for the tour
 
-    tripDate: { type: Date, required: true }, // Trip date for the main post
+    postDate: { type: Date, required: true }, // Trip date for the main post
 
     // **Updated Trips Structure**: Each trip can have multiple photos and other details
     trips: [TripSchema], // Array of trips associated with the destination

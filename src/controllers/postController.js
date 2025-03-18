@@ -11,11 +11,11 @@ const createPost = async (req, res, next) => {
       throw new Error("Access denied. Admin privileges required");
     }
 
-    const { title, destination, price, currency, tripDate, content, sites, trips } = req.body;
+    const { title, destination, price, currency, postDate, content, sites, trips } = req.body;
     const file = req.file;
 
     // Basic validation
-    if (!title || !destination || !price || !tripDate || !content) {
+    if (!title || !destination || !price || !postDate || !content) {
       return res.status(400).json({ message: "Please fill out all required fields." });
     }
 
@@ -28,20 +28,31 @@ const createPost = async (req, res, next) => {
       imagePublicId = cloudinaryResponse.public_id;
     }
 
+    // Parse sites and validate tripDate
+    const parsedSites = JSON.parse(sites || '[]').map(site => {
+      if (!site.name || !site.siteDate) {
+        throw new Error("All fields (name, siteDate) are required for each site.");
+      }
+      return site;
+    });
+
+    // Parse trips
+    const parsedTrips = JSON.parse(trips || '[]');
+
     // Create new post object
     const newPost = {
       title,
       destination,
       price,
       currency,
-      tripDate,
+      postDate,
       content,
       author: req.user.userId,
-      sites: JSON.parse(sites),
-      trips: JSON.parse(trips).map(trip => ({
+      sites: parsedSites,
+      trips: parsedTrips.map(trip => ({
         ...trip,
         postImage: imageUrl ? [{ public_id: imagePublicId, url: imageUrl }] : []
-      })), // Assign the image to each trip
+      })),
       postImage: imageUrl ? [{ public_id: imagePublicId, url: imageUrl }] : []
     };
 
@@ -94,7 +105,12 @@ const editPost = async (req, res) => {
     if (!req.user.isAdmin) throw new Error("Access denied. Admin privileges required");
 
     const { sites = '[]', trips = '[]' } = req.body;
-    const parsedSites = JSON.parse(sites);
+    const parsedSites = JSON.parse(sites).map(site => {
+      if (!site.name || !site.siteDate) {
+        throw new Error("All fields (name, siteDate) are required for each site.");
+      }
+      return site;
+    });
     const parsedTrips = JSON.parse(trips);
     const file = req.file;
 
