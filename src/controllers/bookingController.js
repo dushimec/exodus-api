@@ -28,7 +28,7 @@ const createBooking = async (req, res) => {
   try {
     const savedBooking = await newBooking.save();
     await savedBooking.populate("userId", "name");
-    await savedBooking.populate("postId");
+    await savedBooking.populate("postId","destination").execPopulate();
 
     // Send booking information to EMAIL_USER
     const adminSubject = "New Booking Created";
@@ -45,10 +45,11 @@ const createBooking = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 const getBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find().populate("userId", "name");
+    const bookings = await Booking.find()
+      .populate("userId", "name")
+      .populate("postId", "destination");
     res.status(200).json({ message: "Bookings found successfully", bookings });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -59,7 +60,9 @@ const getBookingById = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const booking = await Booking.findById(id).populate("userId", "name");
+    const booking = await Booking.findById(id)
+      .populate("userId", "name")
+      .populate("postId", "destination");
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
@@ -191,3 +194,4 @@ export {
   getPerformanceOverview,
   getRecentBookings,
 };
+
