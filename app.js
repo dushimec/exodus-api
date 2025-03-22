@@ -10,25 +10,21 @@ import morgan from "morgan";
 import cloudinary from "cloudinary";
 import bookingRoute from "./src/routes/booking.routes.js";
 import productRouter from "./src/routes/product.routes.js";
+import { Server } from "socket.io";
+import { createServer } from "http";
 import cors from "cors";
 import dotenv from "dotenv";
 
 dotenv.config(); // Load environment variables
 
 const app = express();
+const httpServer = createServer(app);
 
-// CORS Configuration
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL,
-    credentials: true,
-    allowedHeaders: ["Authorization", "Content-Type"],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  })
-);
-
-// Handle preflight requests for all routes
-app.options("*", cors());
+export const io = new Server(httpServer, {
+  cors: {
+    origin: "*",
+  },
+});
 
 // Session Middleware
 app.use(
