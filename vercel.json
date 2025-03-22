@@ -2,15 +2,23 @@
   "version": 2,
   "builds": [
     {
-      "src": "src/index.js",
+      "src": "index.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
+      "src": "/api/v1/auth/(.*)",
+      "dest": "index.js",
+      "headers": {
+        "Access-Control-Allow-Origin": "https://oldfoxtours.com",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization"
+      }
+    },
+    {
       "src": "/(.*)",
-      "dest": "src/index.js"
+      "dest": "app.js"
     }
   ]
 }
-
