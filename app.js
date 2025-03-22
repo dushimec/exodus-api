@@ -30,20 +30,6 @@ app.use(
 // Handle preflight requests for all routes
 app.options("*", cors());
 
-// Session Middleware
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "your_secret_key",
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-      secure: process.env.NODE_ENV === "production", // true in production
-      httpOnly: true,
-      sameSite: "lax", // Adjust as needed
-    },
-  })
-);
-
 // Passport Middleware
 app.use(passport.initialize());
 app.use(passport.session());
