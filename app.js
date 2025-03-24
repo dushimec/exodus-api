@@ -1,7 +1,6 @@
 // app.js
 import express from "express";
 import bodyParser from "body-parser";
-
 import session from "express-session";
 import passport from "passport";
 import authRoutes from "./src/routes/auth.routes.js";
@@ -22,9 +21,20 @@ const httpServer = createServer(app);
 
 export const io = new Server(httpServer, {
   cors: {
-    origin: "*",
+    origin: process.env.CLIENT_URL || "http://localhost:8080", // Match your frontend URL
+    methods: ["GET", "POST", "PUT", "DELETE"], // Allowed methods
+    credentials: true, // Allow credentials (cookies, etc.)
   },
 });
+
+// CORS configuration with credentials support
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:8080", // Match your frontend URL
+    methods: ["GET", "POST", "PUT", "DELETE"], // Allowed methods
+    credentials: true, // Allow credentials (cookies, etc.)
+  })
+);
 
 // Session Middleware
 app.use(
@@ -48,8 +58,6 @@ app.use(passport.session());
 app.use(bodyParser.json());
 app.use(morgan("tiny"));
 
-
-
 const api = process.env.API_URL;
 // API Routes
 app.use(`${api}/auth`, authRoutes);
@@ -69,5 +77,5 @@ app.get("/", (req, res) => {
   res.send("Welcome to Oldfox API");
 });
 
-// Export app
-export default app;
+// Export only app and httpServer
+export { app, httpServer };
